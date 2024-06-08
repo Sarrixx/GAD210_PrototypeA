@@ -14,9 +14,6 @@ public class Footsteps : MonoBehaviour, ILoggable
 {
     [Tooltip("Toggle on to print console messages from this component.")]
     [SerializeField] private bool debug;
-    [Tooltip("This only exists in the complete project version of the script (not in the student version of this script)." +
-        "Must be set to true when using the 'complete' version of the PlayerController component.")]
-    [SerializeField] private bool checkForCompleteController = false;
     [Tooltip("The number of seconds between each footstep sound.")]
     [SerializeField][Range(0.1f, 2f)] private float timeBetweenSteps = 0.5f;
     [Tooltip("A list to the foostep audio clips. (The list will be randomly selected from each time a footstep is triggered.)")]
@@ -64,7 +61,7 @@ public class Footsteps : MonoBehaviour, ILoggable
     {
         if (controller != null && controller.isGrounded == true)
         {
-            if((checkForCompleteController == true && PlayerController.Instance.MovementEnabled == true) || (checkForCompleteController == false && PlayerController.Instance.MovementEnabled == true))
+            if(PlayerController.Instance.MovementEnabled == true)
             {
                 if (Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0)
                 {

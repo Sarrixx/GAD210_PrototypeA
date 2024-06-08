@@ -20,6 +20,8 @@ public class PlayerController : MonoBehaviour
     [Header("Physics Properties")]
     [Tooltip("Defines how strong gravity is.")]
     [Range(1f, 100f)][SerializeField] private float gravity;
+    [Tooltip("Defines how strong gravity is.")]
+    [Range(0f, 10f)][SerializeField] private float headDetectionRange = 0.5f;
     [Header("Jumping Properties")]
     [Tooltip("Disables the ability for the player to jump when toggled to true.")]
     [SerializeField] private bool disableJump = false;
@@ -44,6 +46,18 @@ public class PlayerController : MonoBehaviour
 
     private float currentStamina = 1f;
     private Footsteps footsteps;
+
+    [Header("Sprinting Properties")]
+    [Tooltip("The amount of time to transition between crouch states.")]
+    [Range(0.01f, 2f)][SerializeField] private float crouchTime = 0.2f;
+    [Tooltip("Movement speed multiplier while crouching.")]
+    [Range(0.1f, 1f)][SerializeField] private float crouchMultiplier = 0.5f;
+
+    private float crouchTimer = -1f;
+    private float controllerHeight = 0;
+    private float startHeight = 0;
+    private float targetHeight = 0;
+    private bool crouching = false;
 
     /// <summary>
     /// Returns true if the player controller is currently sprinting.
@@ -72,6 +86,10 @@ public class PlayerController : MonoBehaviour
             if (TryGetComponent(out controller) == false)
             {
                 Log($"{gameObject.name} requires a Character Controller component!", 1);
+            }
+            else
+            {
+                controllerHeight = controller.height;
             }
             if (TryGetComponent(out aSrc) == false)
             {
@@ -119,15 +137,33 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        if (MovementEnabled == true)
+        if (Physics.SphereCast(transform.position, controller.radius, Vector3.up, out RaycastHit _, headDetectionRange) == true)
+        {
+            if(velocity > 0)
+            {
+                velocity = 1 / -velocity;
+            }
+        }
+
+            if (MovementEnabled == true)
         {
             if (Input.GetButtonDown("Sprint") == true)
             {
+                ToggleCrouch(false);
                 ToggleSprintSpeed(true);
             }
             else if(Input.GetButtonUp("Sprint") == true)
             {
                 ToggleSprintSpeed(false);
+            }
+            if(Input.GetButtonDown("Crouch") == true)
+            {
+                ToggleSprintSpeed(false);
+                ToggleCrouch(true);
+            }
+            else if(Input.GetButtonUp("Crouch") == true)
+            {
+                ToggleCrouch(false);
             }
             Jump();
             ApplyMovementTick();
@@ -137,7 +173,60 @@ public class PlayerController : MonoBehaviour
             ApplyMovementTick(true);
         }
 
+        CrouchTick();
         StaminaTick();
+    }
+
+    private void CrouchTick()
+    {
+        if(crouchTimer >= 0)
+        {
+            crouchTimer += Time.deltaTime;
+            controller.height = Mathf.Lerp(startHeight, targetHeight, crouchTimer/crouchTime);
+            if(crouchTimer >= crouchTime)
+            {
+                crouchTimer = -1f;
+            }
+        }
+    }
+
+    private bool ToggleCrouch(bool toggle)
+    {
+        if(toggle == true)
+        {
+            if(crouching == false)
+            {
+                ToggleSprintSpeed(false);
+                crouching = true;
+                targetHeight = controllerHeight / 2;
+                startHeight = controller.height;
+                crouchTimer = 0;
+
+                currentMovementSpeed = defaultSpeed * crouchMultiplier;
+                if (footsteps != null)
+                {
+                    footsteps.TimeBetweenStepsMultiplier = 1f / crouchMultiplier;
+                }
+                return true;
+            }
+        }
+        else
+        {
+            if(crouching == true)
+            {
+                crouching = false;
+                targetHeight = controllerHeight;
+                startHeight = controller.height;
+                crouchTimer = 0;
+                currentMovementSpeed = defaultSpeed;
+                if (footsteps != null)
+                {
+                    footsteps.TimeBetweenStepsMultiplier = 1f;
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>
@@ -211,6 +300,15 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void OnDrawGizmos()
+    {
+        if (debug == true)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(transform.position + Vector3.up * headDetectionRange, controller != null ? controller.radius : 0.25f);
+        }
+    }
+
     /// <summary>
     /// Toggles the player's ability to move the player controller.
     /// </summary>
@@ -263,7 +361,6 @@ public class PlayerController : MonoBehaviour
 
     /// <summary>
     /// Forces the character to move to a position.
-    /// STUDENTS MUST WRITE THIS CODE THEMSELVES FOR TELEPORT MECHANIC.
     /// </summary>
     /// <param name="position">The vector coordinates of the location to teleport the player to, in world space.</param>
     public void TeleportToPosition(Vector3 position)
