@@ -11,12 +11,6 @@ public class SecurityCamera : MonoBehaviour
     [SerializeField] private float rotationTime = 5f;
     [Tooltip("The limit to the angle the camera rotates from its forward direction.")]
     [SerializeField] private float rotationClamp = 30f;
-    //[Tooltip("How far the camera can see.")]
-    //[SerializeField] private float viewDistance = 10f;
-    //[Tooltip("The radius of the camera's line of sight.")]
-    //[SerializeField] private float detectionRadius = 0.5f;
-    //[Tooltip("The offset for the second line of sight ray from the first ray.")]
-    //[SerializeField] [Range(0, 1)] private float rayOffset = 0.15f;
     [Tooltip("Defines the angle for the camera's line of sight.")]
     [SerializeField][Range(5f, 180f)] private float lineOfSightAngle = 45f;
     [Tooltip("Defines the distance for the camera's line of sight.")]
@@ -36,6 +30,7 @@ public class SecurityCamera : MonoBehaviour
     private Vector3 originalRotation;
     private Quaternion startRotation;
     private Quaternion targetRotation;
+    private AudioSource aSrc;
 
     /// <summary>
     /// Tracks the camera's current target within range.
@@ -88,6 +83,11 @@ public class SecurityCamera : MonoBehaviour
     /// </summary>
     public event BreachTriggerDelegate BreachTriggerEvent = delegate { };
 
+    private void Awake()
+    {
+        TryGetComponent(out aSrc);
+    }
+
     /// <summary>
     /// Start is called before the first frame update.
     /// </summary>
@@ -118,6 +118,10 @@ public class SecurityCamera : MonoBehaviour
             {
                 rotationTimer = -1;
                 idleTimer = 0;
+                if (aSrc != null && aSrc.isPlaying == true)
+                {
+                    aSrc.Stop();
+                }
             }
         }
         if (idleTimer >= 0)
@@ -130,9 +134,6 @@ public class SecurityCamera : MonoBehaviour
             }
         }
         if (TargetWithinViewAngle == true && Physics.Linecast(transform.position, Target.transform.position, out RaycastHit hit) == true && hit.collider.CompareTag("Player") == true)
-        //if (Physics.SphereCast(transform.position, detectionRadius, transform.forward, out RaycastHit hit, viewDistance) == true && hit.collider.CompareTag("Player") == true
-        //    || Physics.SphereCast(transform.position, detectionRadius, transform.forward + (Vector3.up.normalized * rayOffset), out hit, viewDistance) == true && hit.collider.CompareTag("Player") == true
-        //    || Physics.SphereCast(transform.position, detectionRadius, transform.forward - (Vector3.up.normalized * rayOffset), out hit, viewDistance) == true && hit.collider.CompareTag("Player") == true)
         {
 
             if (awareTimer >= 0)
@@ -193,6 +194,10 @@ public class SecurityCamera : MonoBehaviour
             targetRotation = Quaternion.Euler(new Vector3(originalRotation.x, originalRotation.y - rotationClamp, originalRotation.z));
         }
         rotationTimer = 0;
+        if(aSrc != null && aSrc.clip != null)
+        {
+            aSrc.Play();
+        }
     }
 
     /// <summary>
@@ -237,15 +242,9 @@ public class SecurityCamera : MonoBehaviour
     /// <param name="other"></param>
     private void OnDrawGizmos()
     {
-        //Gizmos.color = Color.red;
-        //Gizmos.DrawWireSphere(transform.position + ((transform.forward + (Vector3.up.normalized * rayOffset)) * viewDistance), detectionRadius);
-        //Gizmos.DrawWireSphere(transform.position + ((transform.forward - (Vector3.up.normalized * rayOffset)) * viewDistance), detectionRadius);
-        //Gizmos.DrawWireSphere(transform.position + (transform.forward * viewDistance), detectionRadius);
-        //Gizmos.DrawRay(transform.position, transform.forward * viewDistance);
-        //Gizmos.DrawRay(transform.position, (transform.forward + (Vector3.up.normalized * rayOffset)) * viewDistance);
-        //Gizmos.DrawRay(transform.position, (transform.forward - (Vector3.up.normalized * rayOffset)) * viewDistance);
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, lineOfSightDistance);
+        Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, (Quaternion.Euler(0, lineOfSightAngle, 0) * transform.forward) * lineOfSightDistance);
         Gizmos.DrawRay(transform.position, (Quaternion.Euler(0, -lineOfSightAngle, 0) * transform.forward) * lineOfSightDistance);
         Gizmos.DrawRay(transform.position, (Quaternion.Euler(lineOfSightAngle, 0, 0) * transform.forward) * lineOfSightDistance);

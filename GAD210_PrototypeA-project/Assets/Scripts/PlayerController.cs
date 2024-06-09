@@ -29,6 +29,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 motionFrameStep;
     private CharacterController controller;
     private AudioSource aSrc;
+    private Footsteps footsteps;
 
     [Header("Sprinting Properties")]
     [Tooltip("Movement speed multiplier while sprinting.")]
@@ -38,8 +39,7 @@ public class PlayerController : MonoBehaviour
     [Tooltip("Defines the rate at which stamina charges.")]
     [Range(0.001f, 2f)][SerializeField] private float staminaChargeRate = 0.7f;
 
-    private float currentStamina = 1f;
-    private Footsteps footsteps;
+    [SerializeField]private float currentStamina = 1f;
 
     [Header("Sprinting Properties")]
     [Tooltip("The amount of time to transition between crouch states.")]
@@ -133,29 +133,39 @@ public class PlayerController : MonoBehaviour
     {
         if (Physics.SphereCast(transform.position, controller.radius, Vector3.up, out RaycastHit _, headDetectionRange) == true)
         {
-            if(velocity > 0)
+            if (velocity > 0)
             {
                 velocity = 1 / -velocity;
             }
         }
 
-            if (MovementEnabled == true)
+        if (MovementEnabled == true)
         {
-            if (Input.GetButtonDown("Sprint") == true)
+            if (Sprinting == false && Input.GetButtonDown("Sprint") == true)
             {
-                ToggleCrouch(false);
                 ToggleSprintSpeed(true);
             }
-            else if(Input.GetButtonUp("Sprint") == true)
+            else if (Sprinting == true && Input.GetButtonUp("Sprint") == true)
             {
                 ToggleSprintSpeed(false);
             }
-            if(Input.GetButtonDown("Crouch") == true)
+            else if (controller.isGrounded == true && Sprinting == true && Input.GetButton("Sprint") == false)
             {
                 ToggleSprintSpeed(false);
+            }
+            //else if (controller.isGrounded == true && Sprinting == false && Input.GetButton("Sprint") == true)
+            //{
+            //    ToggleSprintSpeed(true);
+            //}
+            if (crouching == false && Input.GetButton("Crouch") == true)
+            {
                 ToggleCrouch(true);
             }
-            else if(Input.GetButtonUp("Crouch") == true)
+            else if (crouching == true && Input.GetButtonUp("Crouch") == true)
+            {
+                ToggleCrouch(false);
+            }
+            if (controller.isGrounded == true && crouching == true && Input.GetButton("Crouch") == false)
             {
                 ToggleCrouch(false);
             }
@@ -171,73 +181,12 @@ public class PlayerController : MonoBehaviour
         StaminaTick();
     }
 
-    private void CrouchTick()
+    private void OnDrawGizmos()
     {
-        if(crouchTimer >= 0)
+        if (debug == true)
         {
-            crouchTimer += Time.deltaTime;
-            controller.height = Mathf.Lerp(startHeight, targetHeight, crouchTimer/crouchTime);
-            if(crouchTimer >= crouchTime)
-            {
-                crouchTimer = -1f;
-            }
-        }
-    }
-
-    private bool ToggleCrouch(bool toggle)
-    {
-        if(toggle == true)
-        {
-            if(crouching == false)
-            {
-                ToggleSprintSpeed(false);
-                crouching = true;
-                targetHeight = controllerHeight / 2;
-                startHeight = controller.height;
-                crouchTimer = 0;
-
-                currentMovementSpeed = defaultSpeed * crouchMultiplier;
-                if (footsteps != null)
-                {
-                    footsteps.TimeBetweenStepsMultiplier = 1f / crouchMultiplier;
-                }
-                return true;
-            }
-        }
-        else
-        {
-            if(crouching == true)
-            {
-                crouching = false;
-                targetHeight = controllerHeight;
-                startHeight = controller.height;
-                crouchTimer = 0;
-                currentMovementSpeed = defaultSpeed;
-                if (footsteps != null)
-                {
-                    footsteps.TimeBetweenStepsMultiplier = 1f;
-                }
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Causes the character to jump when jumping input has been detected.
-    /// </summary>
-    private void Jump()
-    {
-        if (disableJump == false)
-        {
-            if (controller != null && controller.isGrounded == true && Input.GetButtonDown("Jump") == true)
-            {
-                velocity = jumpForce;
-                if(aSrc != null && jumpClips.Length > 0)
-                {
-                    aSrc.PlayOneShot(jumpClips[Random.Range(0, jumpClips.Length)]);
-                }
-            }
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(transform.position + Vector3.up * headDetectionRange, controller != null ? controller.radius : 0.25f);
         }
     }
 
@@ -294,12 +243,128 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnDrawGizmos()
+    private void CrouchTick()
     {
-        if (debug == true)
+        if (crouchTimer >= 0)
         {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position + Vector3.up * headDetectionRange, controller != null ? controller.radius : 0.25f);
+            crouchTimer += Time.deltaTime;
+            controller.height = Mathf.Lerp(startHeight, targetHeight, crouchTimer / crouchTime);
+            if (crouchTimer >= crouchTime)
+            {
+                crouchTimer = -1f;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Causes the character to jump when jumping input has been detected.
+    /// </summary>
+    private void Jump()
+    {
+        if (disableJump == false)
+        {
+            if (controller != null && controller.isGrounded == true && Input.GetButtonDown("Jump") == true)
+            {
+                velocity = jumpForce;
+                if (aSrc != null && jumpClips.Length > 0)
+                {
+                    aSrc.PlayOneShot(jumpClips[Random.Range(0, jumpClips.Length)]);
+                }
+            }
+        }
+    }
+
+    private bool ToggleCrouch(bool toggle)
+    {
+        if (toggle == true)
+        {
+            if (crouching == false && controller.isGrounded == true)
+            {
+                ToggleSprintSpeed(false);
+                crouching = true;
+                targetHeight = controllerHeight / 2;
+                startHeight = controller.height;
+                crouchTimer = 0;
+
+                currentMovementSpeed = defaultSpeed * crouchMultiplier;
+                if (footsteps != null)
+                {
+                    footsteps.TimeBetweenStepsMultiplier = 1f / crouchMultiplier;
+                }
+                return true;
+            }
+        }
+        else
+        {
+            if (crouching == true && controller.isGrounded == true)
+            {
+                crouching = false;
+                targetHeight = controllerHeight;
+                startHeight = controller.height;
+                crouchTimer = 0;
+                currentMovementSpeed = defaultSpeed;
+                if (footsteps != null)
+                {
+                    footsteps.TimeBetweenStepsMultiplier = 1f;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Toggles the current movement speed between default speed and sprinting.
+    /// </summary>
+    /// <param name="toggle">If true, movement speed will be set to sprint speed.
+    /// If false, movement speed will be set to default speed.</param>
+    private void ToggleSprintSpeed(bool toggle)
+    {
+        if (toggle == true)
+        {
+            if (Sprinting == false && controller.isGrounded == true)
+            {
+                ToggleCrouch(false);
+                Sprinting = true;
+                currentMovementSpeed = defaultSpeed * sprintMultiplier;
+                if (footsteps != null)
+                {
+                    footsteps.TimeBetweenStepsMultiplier = 1f / sprintMultiplier;
+                }
+            }
+        }
+        else
+        {
+            if (Sprinting == true && controller.isGrounded == true)
+            {
+                Sprinting = false;
+                currentMovementSpeed = defaultSpeed;
+                if (footsteps != null)
+                {
+                    footsteps.TimeBetweenStepsMultiplier = 1f;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Forces the character to move to a position.
+    /// </summary>
+    /// <param name="position">The vector coordinates of the location to teleport the player to, in world space.</param>
+    public void TeleportToPosition(Vector3 position)
+    {
+        if (controller != null)
+        {
+            controller.enabled = false;
+            ///###
+            ///this part might not necessary depending on the context of the game systems
+            if (transform.parent != null)
+            {
+                transform.SetParent(null);
+            }
+            ///###
+            transform.position = position;
+            controller.enabled = true;
         }
     }
 
@@ -349,56 +414,6 @@ public class PlayerController : MonoBehaviour
                 case 2:
                     Debug.LogError($"[PLAYER CONTROLLER] - {gameObject.name}: {message}");
                     break;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Forces the character to move to a position.
-    /// </summary>
-    /// <param name="position">The vector coordinates of the location to teleport the player to, in world space.</param>
-    public void TeleportToPosition(Vector3 position)
-    {
-        if (controller != null)
-        {
-            controller.enabled = false;
-            ///###
-            ///this part might not necessary depending on the context of the game systems
-            if (transform.parent != null)
-            {
-                transform.SetParent(null);
-            }
-            ///###
-            transform.position = position;
-            controller.enabled = true;
-        }
-    }
-
-    /// <summary>
-    /// Toggles the current movement speed between default speed and sprinting.
-    /// </summary>
-    /// <param name="toggle">If true, movement speed will be set to sprint speed.
-    /// If false, movement speed will be set to default speed.</param>
-    public void ToggleSprintSpeed(bool toggle)
-    {
-        if (Sprinting != toggle)
-        {
-            Sprinting = toggle;
-            if (toggle == true)
-            {
-                currentMovementSpeed = defaultSpeed * sprintMultiplier;
-                if (footsteps != null)
-                {
-                    footsteps.TimeBetweenStepsMultiplier = 1f / sprintMultiplier;
-                }
-            }
-            else
-            {
-                currentMovementSpeed = defaultSpeed;
-                if (footsteps != null)
-                {
-                    footsteps.TimeBetweenStepsMultiplier = 1f;
-                }
             }
         }
     }
