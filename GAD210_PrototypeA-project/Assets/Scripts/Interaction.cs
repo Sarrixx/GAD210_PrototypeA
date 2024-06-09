@@ -1,11 +1,5 @@
 using UnityEngine;
 
-#region AUTHOR & COPYRIGHT DETAILS
-/// Original Author: Joshua Ferguson
-/// Contact: Joshua Ferguson <Josh.Ferguson@smtafe.wa.edu.au>.
-/// Last Updated: March, 2024
-#endregion
-
 /// <summary> 
 /// Script responsible for detecting and responding to interactions within the game world.
 /// </summary>

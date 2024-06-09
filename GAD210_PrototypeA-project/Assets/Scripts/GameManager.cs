@@ -1,13 +1,4 @@
-using System.Collections;
-using System.Threading;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-
-#region AUTHOR & COPYRIGHT DETAILS
-/// Original Author: Joshua Ferguson
-/// Contact: Joshua Ferguson <Josh.Ferguson@smtafe.wa.edu.au>.
-/// Last Updated: March, 2024
-#endregion
 
 public delegate void BreachTriggerDelegate();
 
