@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class FeedbackForm : MonoBehaviour
 {
-    private readonly string url = "https://forms.gle/z7omXdrxX3xG645v6";
+    private readonly string url = "https://docs.google.com/forms/d/e/1FAIpQLScbN20sRdRlNHhX8mS5KZUJeqJzCWk2n6N8_IkGJ9VS5qG3IQ/viewform?usp=sharing";
 
     private void Update()
     {
