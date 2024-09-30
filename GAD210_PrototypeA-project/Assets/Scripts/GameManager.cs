@@ -13,9 +13,6 @@ public class GameManager : MonoBehaviour, ILoggable
     [SerializeField] private bool debug;
     [Tooltip("The amount of time the player has to escape when a breach is triggered.")]
     [SerializeField] private float timeToEscape = 120f;
-    [SerializeField] private AudioSource alarmSource;
-    [SerializeField] private GameObject[] standardLighting;
-    [SerializeField] private GameObject[] alarmLighting;
 
     private float escapeTimer = -1;
 
@@ -46,23 +43,6 @@ public class GameManager : MonoBehaviour, ILoggable
         else
         {
             Destroy(gameObject);
-        }
-        if (standardLighting.Length > 0 && alarmLighting.Length > 0)
-        {
-            foreach (GameObject lightingObject in standardLighting)
-            {
-                if (lightingObject.activeSelf != true)
-                {
-                    lightingObject.SetActive(true);
-                }
-            }
-            foreach (GameObject lightingObject in alarmLighting)
-            {
-                if (lightingObject.activeSelf != false)
-                {
-                    lightingObject.SetActive(false);
-                }
-            }
         }
     }
 
@@ -103,22 +83,6 @@ public class GameManager : MonoBehaviour, ILoggable
     {
         Debug.Log("Game manager responding to breach trigger.");
         escapeTimer = 0;
-        if(standardLighting.Length > 0 && alarmLighting.Length > 0)
-        {
-            foreach(GameObject lightingObject in standardLighting)
-            {
-                lightingObject.SetActive(false);
-            }
-            foreach(GameObject lightingObject in alarmLighting)
-            {
-                lightingObject.SetActive(true);
-            }
-        }
-        if (alarmSource != null && alarmSource.clip != null)
-        {
-            alarmSource.loop = true;
-            alarmSource.Play();
-        }
     }
 
     /// <summary>

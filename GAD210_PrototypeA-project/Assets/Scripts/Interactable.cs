@@ -6,7 +6,8 @@ using UnityEngine;
 public abstract class Interactable : MonoBehaviour, IInteractable, ILoggable
 {
     [Tooltip("Toggle on to print console messages from this component.")]
-    [SerializeField] private bool debug;
+    [SerializeField] protected bool debug;
+    [Header("Interaction")]
     [Tooltip("Toggles whether the interaction can be interacted with.")]
     [SerializeField] private bool active = true;
     [Tooltip("If true, the interaction will be disabled after it's successfully interacted with.")]

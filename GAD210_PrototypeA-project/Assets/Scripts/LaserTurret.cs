@@ -1,19 +1,29 @@
 using UnityEngine;
+using UnityEngine.WSA;
 
-public class LaserTurret : MonoBehaviour
+public class LaserTurret : MonoBehaviour, IPoweredObject
 {
     [Tooltip("Toggle on to print console messages from this component.")]
     [SerializeField] private bool debug;
+    [Header("Movement")]
     [Tooltip("The points the turret will move between.")]
     [SerializeField] private Transform[] points;
     [Tooltip("The time taken to move between points.")]
     [SerializeField] private float timeToPoint = 3;
+    [Header("Power")]
+    [SerializeField] private float requiredPower;
 
     private int behaviour = 0;
     private int currentPoint = 0;
     private float timer = -1;
     private bool active = false;
     private Vector3 startPos;
+
+    public bool HasPower { get { return ProvidedPower >= requiredPower; } }
+
+    public float RequiredPower { get { return requiredPower; } }
+
+    public float ProvidedPower { get; private set; }
 
     /// <summary>
     /// Invoked when the player collides with the trigger.
@@ -34,7 +44,7 @@ public class LaserTurret : MonoBehaviour
     /// </summary>
     void Update()
     {
-        if(active == true && points.Length >= 2)
+        if(active == true && HasPower == true && points.Length >= 2)
         {
             if(Vector3.Distance(transform.position, points[currentPoint].position) <= 0)
             {
@@ -73,6 +83,17 @@ public class LaserTurret : MonoBehaviour
         }
     }
 
+    private void Activate()
+    {
+        if (active == false)
+        {
+            active = true;
+            startPos = transform.position;
+            timer = 0;
+            behaviour = 1;
+        }
+    }
+
     /// <summary>
     /// Functionality executed in response to a breach event triggering.
     /// </summary>
@@ -80,10 +101,7 @@ public class LaserTurret : MonoBehaviour
     {
         Debug.Log("Laser responding to breach event.");
         BreachTriggerEvent -= GameManager.Instance.TriggerBreach;
-        active = true;
-        startPos = transform.position;
-        timer = 0;
-        behaviour = 1;
+        Activate();
     }
 
     /// <summary>
@@ -112,5 +130,17 @@ public class LaserTurret : MonoBehaviour
                     break;
             }
         }
+    }
+
+    public void PowerConnect(float powerAmount)
+    {
+        ProvidedPower += powerAmount;
+        Log("Power connected.");
+    }
+
+    public void PowerDisconnect(float powerAmount)
+    {
+        ProvidedPower -= powerAmount;
+        Log("Power disconnected.");
     }
 }

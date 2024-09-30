@@ -1,7 +1,16 @@
 using UnityEngine;
 
-public class AlarmPanel : Interactable, IBreachTrigger
+public class AlarmPanel : Interactable, IBreachTrigger, IPoweredObject
 {
+    [SerializeField] private float requiredPower = 50;
+    [SerializeField] private AudioSource alarmSource;
+
+    public float RequiredPower { get { return requiredPower; } }
+
+    public float ProvidedPower { get; private set; }
+
+    public bool HasPower { get { return ProvidedPower >= requiredPower; } }
+
     /// <summary>
     /// Invoked when the alarm panel is interacted with.
     /// </summary>
@@ -23,6 +32,11 @@ public class AlarmPanel : Interactable, IBreachTrigger
     {
         Log("Alarm responding to breach event.");
         BreachTriggerEvent -= GameManager.Instance.TriggerBreach;
+        if (alarmSource != null && alarmSource.clip != null)
+        {
+            alarmSource.loop = true;
+            alarmSource.Play();
+        }
     }
 
     /// <summary>
@@ -32,11 +46,25 @@ public class AlarmPanel : Interactable, IBreachTrigger
     /// <returns></returns>
     public override bool OnInteract(out Interactable engagedAction)
     {
-        if (base.OnInteract(out engagedAction) == true)
+        if (base.OnInteract(out engagedAction) == true && HasPower == true)
         {
             BreachTriggerEvent.Invoke();
             return true;
         }
         return false;
+    }
+
+    public void PowerConnect(float powerAmount)
+    {
+        ProvidedPower += powerAmount;
+        //enable digital display
+        Log("Power connected.");
+    }
+
+    public void PowerDisconnect(float powerAmount)
+    {
+        ProvidedPower -= powerAmount;
+        //disable digital display
+        Log("Power disconnected.");
     }
 }

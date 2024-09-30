@@ -3,23 +3,32 @@ using UnityEngine;
 /// <summary>
 /// Script responsible for door interaction functionality.
 /// </summary>
-public class DoorInteraction : Interactable, IBreachTrigger, ILoggable
+public class DoorInteraction : Interactable, IBreachTrigger, ILoggable, IPoweredObject
 {
+    [Header("Initialisers")]
     [Tooltip("Set to true to have the door open when the game starts. If true, must be enabled for all doors in lock group.")]
     [SerializeField] private bool openOnStart = false;
+    [Tooltip("Set to true to lock the door when the game starts.")]
+    [SerializeField] private bool lockedOnStart = false;
+    [Header("Door Interaction")]
     [Tooltip("Include other doors that should lock/unlock when this door is locked/unlocked.")]
     [SerializeField] private DoorInteraction[] lockGroup;
     [Tooltip("The audio clip that plays on interaction while door is locked.")]
     [SerializeField] protected AudioClip lockedInteractionClip;
-    [Tooltip("Set to true to lock the door when the game starts.")]
-    [SerializeField] private bool lockedOnStart = false;
+    [Header("Breach Response")]
     [Tooltip("Set to true to lock the door when a breach is triggered.")]
     [SerializeField] private bool lockedOnBreach = false;
     [SerializeField] private int maxLockedInteractions = 3;
+    [Header("Power")]
+    [SerializeField] private float requiredPower = 50;
 
     private bool locked = false;
     private int lockedInteractions = 0;
     private Animator anim;
+
+    public float RequiredPower { get { return requiredPower; } }
+    public float ProvidedPower { get; private set; }
+    public bool HasPower { get { return ProvidedPower >= RequiredPower; } }
 
     /// <summary>
     /// Invoked when the player collides with the trigger.
@@ -94,7 +103,7 @@ public class DoorInteraction : Interactable, IBreachTrigger, ILoggable
     public override bool OnInteract(out Interactable engagedAction)
     {
         engagedAction = null;
-        if (Active == true)
+        if (Active == true && HasPower == true)
         {
             ToggleDoorState();
             if (disableOnSuccessfulInteraction == true)
@@ -175,5 +184,17 @@ public class DoorInteraction : Interactable, IBreachTrigger, ILoggable
                 PlaySound(interactionClip, aSrc);
             }
         }
+    }
+
+    public void PowerConnect(float powerAmount)
+    {
+        ProvidedPower += powerAmount;
+        Log("Power connected.");
+    }
+
+    public void PowerDisconnect(float powerAmount)
+    {
+        ProvidedPower -= powerAmount;
+        Log("Power disconnected.");
     }
 }

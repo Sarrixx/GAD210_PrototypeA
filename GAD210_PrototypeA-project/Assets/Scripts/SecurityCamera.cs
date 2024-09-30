@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class SecurityCamera : MonoBehaviour
+public class SecurityCamera : MonoBehaviour, IPoweredObject
 {
     [Tooltip("Toggle on to print console messages from this component.")]
     [SerializeField] private bool debug;
@@ -23,6 +23,7 @@ public class SecurityCamera : MonoBehaviour
     [SerializeField] private Transform respawnPoint;
     [Tooltip("A reference to the alert fill image for the camera.")]
     [SerializeField] private Image fillImage;
+    [SerializeField] private float requiredPower = 25f;
 
     private float idleTimer = -1;
     private float rotationTimer = -1;
@@ -78,6 +79,11 @@ public class SecurityCamera : MonoBehaviour
         }
     }
 
+    public float RequiredPower { get { return requiredPower; } }
+    public bool HasPower { get { return ProvidedPower >= requiredPower; } }
+
+    public float ProvidedPower { get; private set; }
+
     /// <summary>
     /// Invoked when the player collides with the trigger.
     /// </summary>
@@ -110,63 +116,78 @@ public class SecurityCamera : MonoBehaviour
     /// </summary>
     void Update()
     {
-        if (rotationTimer >= 0)
+        if (HasPower == true)
         {
-            rotationTimer += Time.deltaTime;
-            transform.rotation = Quaternion.Lerp(startRotation, targetRotation, rotationTimer / rotationTime);
-            if (rotationTimer >= rotationTime)
+            if (TargetWithinViewAngle == true && Physics.Linecast(transform.position, Target.transform.position, out RaycastHit hit) == true && hit.collider.CompareTag("Player") == true)
             {
-                rotationTimer = -1;
-                idleTimer = 0;
-                if (aSrc != null && aSrc.isPlaying == true)
+
+                if (awareTimer >= 0)
                 {
-                    aSrc.Stop();
+                    awareTimer += Time.deltaTime;
+                    if (fillImage != null)
+                    {
+                        fillImage.fillAmount = awareTimer / awareTime;
+                    }
+                    if (awareTimer >= awareTime)
+                    {
+                        awareTimer = -1;
+                        if (fillImage != null)
+                        {
+                            fillImage.fillAmount = 0;
+                        }
+
+                        if (GameManager.Instance != null)
+                        {
+                            BreachTriggerEvent?.Invoke();
+                        }
+                        else if (hit.transform.TryGetComponent(out PlayerController controller) == true && respawnPoint != null)
+                        {
+                            controller.TeleportToPosition(respawnPoint.position);
+                        }
+                    }
                 }
-            }
-        }
-        if (idleTimer >= 0)
-        {
-            idleTimer += Time.deltaTime;
-            if (idleTimer >= idleTime)
-            {
-                idleTimer = -1;
-                StartRotation();
-            }
-        }
-        if (TargetWithinViewAngle == true && Physics.Linecast(transform.position, Target.transform.position, out RaycastHit hit) == true && hit.collider.CompareTag("Player") == true)
-        {
-
-            if (awareTimer >= 0)
-            {
-                awareTimer += Time.deltaTime;
-                fillImage.fillAmount = awareTimer / awareTime;
-                if (awareTimer >= awareTime)
+                else
                 {
-                    awareTimer = -1;
-                    fillImage.fillAmount = 0;
-
-                    if (GameManager.Instance != null)
-                    {
-                        BreachTriggerEvent?.Invoke();
-                    }
-                    else if (hit.transform.TryGetComponent(out PlayerController controller) == true)
-                    {
-                        controller.TeleportToPosition(respawnPoint.position);
-                    }
+                    awareTimer = 0;
                 }
             }
             else
             {
-                awareTimer = 0;
-            }
-        }
-        else if(awareTimer >= 0)
-        {
-            awareTimer -= Time.deltaTime;
-            fillImage.fillAmount = awareTimer / awareTime;
-            if (awareTimer <= 0)
-            {
-                awareTimer = -1;
+                if (rotationTimer >= 0)
+                {
+                    rotationTimer += Time.deltaTime;
+                    transform.rotation = Quaternion.Lerp(startRotation, targetRotation, rotationTimer / rotationTime);
+                    if (rotationTimer >= rotationTime)
+                    {
+                        rotationTimer = -1;
+                        idleTimer = 0;
+                        if (aSrc != null && aSrc.isPlaying == true)
+                        {
+                            aSrc.Stop();
+                        }
+                    }
+                }
+                if (idleTimer >= 0)
+                {
+                    idleTimer += Time.deltaTime;
+                    if (idleTimer >= idleTime)
+                    {
+                        idleTimer = -1;
+                        StartRotation();
+                    }
+                }
+                if (awareTimer >= 0)
+                {
+                    awareTimer -= Time.deltaTime;
+                    if (fillImage != null)
+                    {
+                        fillImage.fillAmount = awareTimer / awareTime;
+                    }
+                    if (awareTimer <= 0)
+                    {
+                        awareTimer = -1;
+                    }
+                }
             }
         }
     }
@@ -251,7 +272,7 @@ public class SecurityCamera : MonoBehaviour
         Gizmos.DrawRay(transform.position, (Quaternion.Euler(-lineOfSightAngle, 0, 0) * transform.forward) * lineOfSightDistance);
         if(TargetWithinViewAngle == true)
         {
-            Gizmos.color = Color.red;
+            Gizmos.color = Color.green;
             Gizmos.DrawLine(transform.position, Target.position);
         }
     }
@@ -282,5 +303,19 @@ public class SecurityCamera : MonoBehaviour
                     break;
             }
         }
+    }
+
+    public void PowerConnect(float powerAmount)
+    {
+        ProvidedPower += powerAmount;
+        //enable emissive map
+        Log("Power connected.");
+    }
+
+    public void PowerDisconnect(float powerAmount)
+    {
+        ProvidedPower -= powerAmount;
+        //disable emissive map
+        Log("Power disconnected.");
     }
 }
