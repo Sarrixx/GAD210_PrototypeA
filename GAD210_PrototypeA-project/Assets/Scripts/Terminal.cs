@@ -2,13 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Terminal : Interactable, IPoweredObject
+public class Terminal : Interactable, IPoweredEntity
 {
+    public delegate void TerminalEventDelegate(Terminal terminal);
+
     [SerializeField] private float requiredPower = 50;
+    [SerializeField] private TerminalApp[] installedApps;
+    [SerializeField] private string password;
 
     public float RequiredPower { get { return requiredPower; } }
     public float ProvidedPower { get; private set; }
     public bool HasPower { get { return ProvidedPower >= requiredPower; } }
+    public TerminalApp[] InstalledApps { get { return installedApps; } }
+
+    public static event TerminalEventDelegate OnTerminalEngagedEvent;
+    public static event TerminalEventDelegate OnTerminalDisengagedEvent;
 
     public void PowerConnect(float powerAmount)
     {
@@ -18,6 +26,12 @@ public class Terminal : Interactable, IPoweredObject
     public void PowerDisconnect(float powerAmount)
     {
         ProvidedPower -= powerAmount;
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+
     }
 
     // Start is called before the first frame update
@@ -31,21 +45,26 @@ public class Terminal : Interactable, IPoweredObject
     {
         
     }
-}
+    public override bool OnInteract(out Interactable engagedAction)
+    {
+        engagedAction = null;
+        if (HasPower == true)
+        {
+            if (base.OnInteract(out engagedAction) == true)
+            {
+                //trigger event OnInteractionEngaged to allow other components to react (like locking movement)
+                OnTerminalEngagedEvent?.Invoke(this);
+                engagedAction = this;
+                return true;
+            }
+        }
+        return false;
+    }
 
-///setup terminals so that they run specific apps? e.g. a power network app that allows players to reroute power flow; an email app that can have mail configured
-///on an instance basis; 
-///or setup a series of inheritance-based terminals, with different terminal types?
-///power terminals
-///> reroute the flow of power
-///> connect and disconnect devices
-///> manage connected systems
-///> manage power grids
-///door access terminals
-///> toggle lock state
-///> toggle open/close
-///> toggle active state
-///security terminals
-///> toggle alarms
-///> toggle panels
-///> toggle lasers
+    public override bool OnDisengageInteraction()
+    {
+        OnTerminalDisengagedEvent?.Invoke(null);
+        //trigger event OnInteractionDisengaged to allow other components to react (like unlocking movement)
+        return true;
+    }
+}

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.WSA;
 
-public class LaserTurret : MonoBehaviour, IPoweredObject
+public class LaserTurret : MonoBehaviour, IPoweredEntity
 {
     [Tooltip("Toggle on to print console messages from this component.")]
     [SerializeField] private bool debug;

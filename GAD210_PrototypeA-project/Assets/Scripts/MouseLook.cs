@@ -68,6 +68,18 @@ public class MouseLook : MonoBehaviour
         {
             Log($"More than one MouseLook script detected in the scene!\n\nMouseLook implements the singleton pattern, there should only be one insance of the script in the scene at any time.", 1);
         }
+        Terminal.OnTerminalEngagedEvent += InteractionEngaged;
+        Terminal.OnTerminalDisengagedEvent += InteractionDisengaged;
+    }
+
+    private void InteractionEngaged(Interactable interactable)
+    {
+        LookEnabled = false;
+    }
+
+    private void InteractionDisengaged(Interactable interactable)
+    {
+        LookEnabled = true;
     }
 
     /// <summary>

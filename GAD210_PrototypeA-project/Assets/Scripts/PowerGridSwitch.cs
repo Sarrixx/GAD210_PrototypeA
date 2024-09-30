@@ -24,11 +24,11 @@ public class PowerGridSwitch : Interactable
                     {
                         if (ids.Length == 1)
                         {
-                            grid.Toggle(!grid.Active);
+                            grid.ToggleGrid(!grid.Active);
                         }
                         else if (grid.GetSubSystem(ids[1].Replace("_", string.Empty), out PowerSubSystem system) == true)
                         {
-                            system.Toggle(!system.Active);
+                            system.ToggleSubsystem(!system.Active);
                         }
                     }
                     else

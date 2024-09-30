@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// Script responsible for door interaction functionality.
 /// </summary>
-public class DoorInteraction : Interactable, IBreachTrigger, ILoggable, IPoweredObject
+public class DoorInteraction : Interactable, IBreachTrigger, ILoggable, IPoweredEntity
 {
     [Header("Initialisers")]
     [Tooltip("Set to true to have the door open when the game starts. If true, must be enabled for all doors in lock group.")]
@@ -29,6 +29,7 @@ public class DoorInteraction : Interactable, IBreachTrigger, ILoggable, IPowered
     public float RequiredPower { get { return requiredPower; } }
     public float ProvidedPower { get; private set; }
     public bool HasPower { get { return ProvidedPower >= RequiredPower; } }
+    public bool IsOpen { get { if (anim != null) { return anim.GetBool("open"); } else { return false; } } }
 
     /// <summary>
     /// Invoked when the player collides with the trigger.
@@ -66,7 +67,7 @@ public class DoorInteraction : Interactable, IBreachTrigger, ILoggable, IPowered
         GameManager.Instance.BreachEvent += BreachResponse;
         if (anim != null)
         {
-            if (anim.GetBool("open") == true && openOnStart == false)
+            if (IsOpen == true && openOnStart == false)
             {
                 anim.SetBool("open", false);
             }
@@ -88,7 +89,7 @@ public class DoorInteraction : Interactable, IBreachTrigger, ILoggable, IPowered
     {
         Log("Door responding to breach event.");
         BreachTriggerEvent -= GameManager.Instance.TriggerBreach;
-        if(lockedOnBreach == true)
+        if(lockedOnBreach == true && HasPower == true)
         {
             ToggleLockState(true);
         }
@@ -105,7 +106,14 @@ public class DoorInteraction : Interactable, IBreachTrigger, ILoggable, IPowered
         engagedAction = null;
         if (Active == true && HasPower == true)
         {
-            ToggleDoorState();
+            if(ToggleDoorState() == false)
+            {
+                lockedInteractions++;
+                if (lockedInteractions >= maxLockedInteractions)
+                {
+                    BreachTriggerEvent?.Invoke();
+                }
+            }
             if (disableOnSuccessfulInteraction == true)
             {
                 Active = false;
@@ -125,32 +133,33 @@ public class DoorInteraction : Interactable, IBreachTrigger, ILoggable, IPowered
     /// <summary>
     /// Toggles the current door state between open and closed.
     /// </summary>
-    public void ToggleDoorState()
+    public bool ToggleDoorState()
     {
-        if (locked == false)
+        if (HasPower == true)
         {
-            if (anim != null)
+            if (locked == false)
             {
-                if (anim.GetBool("open") == false)
+                if (anim != null)
                 {
-                    anim.SetBool("open", true);
+                    if (IsOpen == false)
+                    {
+                        anim.SetBool("open", true);
+                    }
+                    else if (IsOpen == true)
+                    {
+                        anim.SetBool("open", false);
+                    }
                 }
-                else if (anim.GetBool("open") == true)
-                {
-                    anim.SetBool("open", false);
-                }
+                PlaySound(interactionClip, aSrc);
+                return true;
             }
-            PlaySound(interactionClip, aSrc);
-        }
-        else
-        {
-            lockedInteractions++;
-            PlaySound(lockedInteractionClip, aSrc);
-            if(lockedInteractions >= maxLockedInteractions)
+            else
             {
-                BreachTriggerEvent?.Invoke();
+                PlaySound(lockedInteractionClip, aSrc);
+                return false;
             }
         }
+        return false;
     }
 
     /// <summary>
@@ -158,32 +167,37 @@ public class DoorInteraction : Interactable, IBreachTrigger, ILoggable, IPowered
     /// Door will also close if already open and lock state changed to true.
     /// </summary>
     /// <param name="lockState">If true, the door will be locked. If false, the door will be unlocked.</param>
-    public void ToggleLockState(bool lockState = true)
+    public bool ToggleLockState(bool lockState = true)
     {
-        locked = lockState;
-        foreach (DoorInteraction door in lockGroup)
+        if (HasPower == true)
         {
-            if (door != this && door.locked != lockState)
+            locked = lockState;
+            foreach (DoorInteraction door in lockGroup)
             {
-                door.ToggleLockState(lockState);
-            }
-        }
-        Log("Lockstate set to " + locked);
-        if (locked == true)
-        {
-            if (anim != null)
-            {
-                if (anim.GetBool("open") == true)
+                if (door != this && door.locked != lockState)
                 {
-                    anim.SetBool("open", false);
+                    door.ToggleLockState(lockState);
+                }
+            }
+            Log("Lockstate set to " + locked);
+            if (locked == true)
+            {
+                if (anim != null)
+                {
+                    if (IsOpen == true)
+                    {
+                        anim.SetBool("open", false);
+                        PlaySound(interactionClip, aSrc);
+                    }
+                }
+                else
+                {
                     PlaySound(interactionClip, aSrc);
                 }
             }
-            else
-            {
-                PlaySound(interactionClip, aSrc);
-            }
+            return true;
         }
+        return false;
     }
 
     public void PowerConnect(float powerAmount)

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PowerLightGroup : MonoBehaviour, IPoweredObject
+public class PowerLightGroup : MonoBehaviour, IPoweredEntity
 {
     [SerializeField] private Light[] lights;
     [SerializeField] private float requiredPower;

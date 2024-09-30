@@ -57,7 +57,7 @@ public abstract class Interactable : MonoBehaviour, IInteractable, ILoggable
     /// <summary>
     /// Executed when this interaction is interacted with by the player.
     /// </summary>
-    /// <param name="interactionInfo">The interaction data from the interaction system.</param>
+    /// <param name="engagedAction">The interaction currently being engaged in.</param>
     /// <returns>Returns true if the interaction was successfully completed.</returns>
     public virtual bool OnInteract(out Interactable engagedAction)
     {

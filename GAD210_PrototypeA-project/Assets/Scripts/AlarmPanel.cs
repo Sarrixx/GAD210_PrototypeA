@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class AlarmPanel : Interactable, IBreachTrigger, IPoweredObject
+public class AlarmPanel : Interactable, IBreachTrigger, IPoweredEntity
 {
     [SerializeField] private float requiredPower = 50;
     [SerializeField] private AudioSource alarmSource;
@@ -32,7 +32,7 @@ public class AlarmPanel : Interactable, IBreachTrigger, IPoweredObject
     {
         Log("Alarm responding to breach event.");
         BreachTriggerEvent -= GameManager.Instance.TriggerBreach;
-        if (alarmSource != null && alarmSource.clip != null)
+        if (alarmSource != null && alarmSource.clip != null && HasPower == true)
         {
             alarmSource.loop = true;
             alarmSource.Play();

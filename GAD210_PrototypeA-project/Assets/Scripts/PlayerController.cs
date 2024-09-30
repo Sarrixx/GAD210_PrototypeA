@@ -98,6 +98,18 @@ public class PlayerController : MonoBehaviour
         {
             gameObject.SetActive(false);
         }
+        Terminal.OnTerminalEngagedEvent += InteractionEngaged;
+        Terminal.OnTerminalDisengagedEvent += InteractionDisengaged;
+    }
+
+    private void InteractionEngaged(Interactable interactable)
+    {
+        MovementEnabled = false;
+    }
+
+    private void InteractionDisengaged(Interactable interactable)
+    {
+        MovementEnabled = true;
     }
 
     /// <summary>

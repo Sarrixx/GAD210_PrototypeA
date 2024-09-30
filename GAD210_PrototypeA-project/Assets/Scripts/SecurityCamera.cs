@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class SecurityCamera : MonoBehaviour, IPoweredObject
+public class SecurityCamera : MonoBehaviour, IPoweredEntity
 {
     [Tooltip("Toggle on to print console messages from this component.")]
     [SerializeField] private bool debug;
