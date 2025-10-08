@@ -1,15 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class TerminalHUD : MonoBehaviour
 {
-    [SerializeField] private Canvas mailAppCanvas;
-    [SerializeField] private Canvas powerAppCanvas;
-    [SerializeField] private Canvas securityAppCanvas;
     [SerializeField] private Image[] iconImages;
-    [SerializeField] private Text mailMessageText;
+
+    [SerializeField] private MailAppUI mailAppUI;
+    [SerializeField] private SecurityAppUI securityAppUI;
+    [SerializeField] private PowerAppUI powerAppUI;
 
     private Canvas terminalCanvas;
     private Terminal currentTerminal;
@@ -54,17 +56,17 @@ public class TerminalHUD : MonoBehaviour
         if (currentTerminal != null)
         {
             terminalCanvas.enabled = true;
-            if (mailAppCanvas != null)
+            if (mailAppUI.Active == true)
             {
-                mailAppCanvas.enabled = false;
+                mailAppUI.Close();
             }
-            if (powerAppCanvas != null)
+            if (securityAppUI.Active == true)
             {
-                powerAppCanvas.enabled = false;
+                securityAppUI.Close();
             }
-            if (securityAppCanvas != null)
+            if (powerAppUI.Active == true)
             {
-                securityAppCanvas.enabled = false;
+                powerAppUI.Close();
             }
 
             for (int i = 0; i < iconImages.Length; i++)
@@ -87,64 +89,59 @@ public class TerminalHUD : MonoBehaviour
         switch (app)
         {
             case null:
-                if (mailAppCanvas != null)
+                if (mailAppUI.Active == true)
                 {
-                    mailAppCanvas.enabled = false;
+                    mailAppUI.Close();
                 }
-                if (powerAppCanvas != null)
+                if (securityAppUI.Active == true)
                 {
-                    powerAppCanvas.enabled = false;
+                    securityAppUI.Close();
                 }
-                if (securityAppCanvas != null)
+                if (powerAppUI.Active == true)
                 {
-                    securityAppCanvas.enabled = false;
+                    powerAppUI.Close();
                 }
                 return true;
             case MailApp mail:
-                if (mailAppCanvas != null)
+                if (mailAppUI.Active == false)
                 {
-                    mailAppCanvas.enabled = true;
-                    mail.SelectMail(0, out Mail? message);
-                    if (message is Mail _message)
-                    {
-                        DisplayMail(_message);
-                    }
+                    mailAppUI.Open(mail);
                 }
-                if (powerAppCanvas != null)
+                if (securityAppUI.Active == true)
                 {
-                    powerAppCanvas.enabled = false;
+                    securityAppUI.Close();
                 }
-                if (securityAppCanvas != null)
+                if (powerAppUI.Active == true)
                 {
-                    securityAppCanvas.enabled = false;
+                    powerAppUI.Close();
                 }
                 return true;
             case SecurityApp security:
-                if (mailAppCanvas != null)
+                if (mailAppUI.Active == true)
                 {
-                    mailAppCanvas.enabled = false;
+                    mailAppUI.Close();
                 }
-                if (powerAppCanvas != null)
+                if (securityAppUI.Active == false)
                 {
-                    powerAppCanvas.enabled = false;
+                    securityAppUI.Open();
                 }
-                if (securityAppCanvas != null)
+                if (powerAppUI.Active == true)
                 {
-                    securityAppCanvas.enabled = true;
+                    powerAppUI.Close();
                 }
                 return true;
             case PowerManagementApp power:
-                if (mailAppCanvas != null)
+                if (mailAppUI.Active == true)
                 {
-                    mailAppCanvas.enabled = false;
+                    mailAppUI.Close();
                 }
-                if (powerAppCanvas != null)
+                if (securityAppUI.Active == true)
                 {
-                    powerAppCanvas.enabled = true;
+                    securityAppUI.Close();
                 }
-                if (securityAppCanvas != null)
+                if (powerAppUI.Active == false)
                 {
-                    securityAppCanvas.enabled = false;
+                    powerAppUI.Open(power);
                 }
                 return true;
         }
@@ -174,27 +171,255 @@ public class TerminalHUD : MonoBehaviour
         }
     }
 
+    public void SelectInboxMessage(int index)
+    {
+        if(currentTerminal != null)
+        {
+            if (currentTerminal.InstalledApps[selectedAppIndex] is MailApp mail)
+            {
+                mailAppUI.SelectInboxMessage(mail, index);
+            }
+        }
+    }
+
+    public void SelectPowerGrid(int index)
+    {
+        if(currentTerminal != null)
+        {
+            if (currentTerminal.InstalledApps[selectedAppIndex] is PowerManagementApp powerManager)
+            {
+                powerAppUI.SelectGrid(powerManager, index);
+            }
+        }
+    }
+
+    public void SelectSubSystemGrid(int index)
+    {
+        if(currentTerminal != null)
+        {
+            if (currentTerminal.InstalledApps[selectedAppIndex] is PowerManagementApp powerManager)
+            {
+                powerAppUI.SelectSubSystem(powerManager, index);
+            }
+        }
+    }
+
+    public void SelectConnectedEntity()
+    {
+        if (currentTerminal != null)
+        {
+            if (currentTerminal.InstalledApps[selectedAppIndex] is PowerManagementApp powerManager)
+            {
+                powerAppUI.UpdateSelectedEntityInfo(powerManager);
+            }
+        }
+    }
+}
+
+public abstract class TerminalAppUI
+{
+    [SerializeField] protected Canvas appCanvas;
+
+    public bool Active { get { return appCanvas.enabled; } }
+
+    public virtual void Open()
+    {
+        appCanvas.enabled = true;
+    }
+    public virtual void Close()
+    {
+        appCanvas.enabled = false;
+    }
+}
+
+[System.Serializable]
+public class MailAppUI : TerminalAppUI
+{
+    [System.Serializable]
+    private struct MailAppInboxMessage
+    {
+        [SerializeField] private Image image;
+        [SerializeField] private Text text;
+
+        public Image Image { get { return image;} }
+        public Text Text { get { return text;} }
+    }
+
+    [SerializeField] private Text mailMessageText;
+    [SerializeField] MailAppInboxMessage[] inboxMessages;
+
+    public void Open(MailApp appInstance)
+    {
+        base.Open();
+        for(int i = 0; i < inboxMessages.Length; i++)
+        {
+            if(i < appInstance.Inbox.Length)
+            {
+                inboxMessages[i].Image.gameObject.SetActive(true);
+                inboxMessages[i].Image.color = Color.white;
+                inboxMessages[i].Text.text = $"{appInstance.Inbox[i].SubjectLine}\nFrom: {appInstance.Inbox[i].FromAddress}";
+            }
+            else
+            {
+                inboxMessages[i].Image.gameObject.SetActive(false);
+            }
+        }
+        SelectInboxMessage(appInstance, 0);
+    }
+
+    public void SelectInboxMessage(MailApp appInstance, int index)
+    {
+        if (appInstance.SelectMail(index, out Mail message) == true)
+        {
+            inboxMessages[index].Image.color = Color.grey;
+            for (int i = 0; i < inboxMessages.Length; i++)
+            {
+                if(i != index)
+                {
+                    inboxMessages[i].Image.color = Color.white;
+                }
+            }
+            DisplayMail(message);
+        }
+    }
+
     private void DisplayMail(Mail mail)
     {
         mailMessageText.text = mail.CompiledMessage;
     }
 }
 
-public abstract class TerminalAppHUD
+[System.Serializable]
+public class PowerAppUI : TerminalAppUI
 {
-    public abstract void Open();
-    public abstract void Close();
-}
+    [System.Serializable]
+    private struct GridSelectionUIData
+    {
+        [SerializeField] private Image gridIconImage;
+        [SerializeField] private Text gridText;
 
-public class MailAppHUD : TerminalAppHUD
-{
+        public Image GridIconImage { get { return gridIconImage; } }
+        public Text GridText { get { return gridText; } }
+    }
+
+    [System.Serializable]
+    private struct SubSystemSelectionUIData
+    {
+        [SerializeField] private Image subSystemOptionImage;
+        [SerializeField] private Text subSystemOptionText;
+
+        public Image SubSystemOptionImage { get { return subSystemOptionImage; } }
+        public Text SubSystemOptionText { get { return subSystemOptionText; } }
+    }
+
+    [SerializeField] private Image gridSelectionPanel;
+    [SerializeField] private GridSelectionUIData[] gridSelectionOptions;
+    [SerializeField] private Image subSystemSelectionPanel;
+    [SerializeField] private SubSystemSelectionUIData[] subSystemSelectionOptions;
+    [SerializeField] private Image entityInfoPanel;
+    [SerializeField] private Text entityInfoText;
+    [SerializeField] private Dropdown systemEntitiesDropdown;
+
+    private PowerGrid selectedGrid;
+    private PowerSubSystem selectedSubSystem;
+
+    public void Open(PowerManagementApp appInstance)
+    {
+        base.Open();
+        ToggleSubSystemSelectionPanel(appInstance, false);
+        UpdateSelectedEntityInfo(appInstance);
+    }
+
     public override void Close()
     {
-        throw new System.NotImplementedException();
+        base.Close();
+        selectedGrid = null;
+        selectedSubSystem = null;
     }
 
-    public override void Open()
+    public void SelectGrid(PowerManagementApp appInstance, int index)
     {
-        throw new System.NotImplementedException();
+        if(appInstance.GetGrid(index, out selectedGrid) == true)
+        {
+            gridSelectionOptions[index].GridIconImage.color = Color.grey;
+            for (int i = 0; i < gridSelectionOptions.Length; i++)
+            {
+                if (i != index)
+                {
+                    gridSelectionOptions[i].GridIconImage.color = Color.white;
+                }
+            }
+            ToggleSubSystemSelectionPanel(appInstance, true);
+        }
     }
+
+    public void SelectSubSystem(PowerManagementApp appInstance, int index)
+    {
+        if(appInstance.GetPowerSubSystem(index, out selectedSubSystem) == true)
+        {
+            //set sub system entity dropdown options
+            systemEntitiesDropdown.ClearOptions();
+            List<string> dropdownOptions = new List<string>(selectedSubSystem.ConnectedEntities.Count);
+            for (int i = 0; i < selectedSubSystem.ConnectedEntities.Count; i++)
+            {
+                dropdownOptions.Add(selectedSubSystem.ConnectedEntities[i].GetType().ToString().ToUpper());
+            }
+            systemEntitiesDropdown.AddOptions(dropdownOptions);
+            if (systemEntitiesDropdown.gameObject.activeSelf == false)
+            {
+                systemEntitiesDropdown.gameObject.SetActive(true);
+            }
+        }
+    }
+
+    public void UpdateSelectedEntityInfo(PowerManagementApp appInstance)
+    {
+        if(appInstance.GetConnectedEntity(selectedSubSystem, systemEntitiesDropdown.value, out IPoweredEntity entity) == true)
+        {
+            entityInfoPanel.gameObject.SetActive(true);
+            string entityInfo = $"{entity.GetType()}";
+            //connected grids?
+            //connected sub systems?
+            entityInfo += $"\n{entity.ProvidedPower}/{entity.RequiredPower}";
+            entityInfoText.text = entityInfo;
+        }
+        else
+        {
+            entityInfoText.text = "";
+            entityInfoPanel.gameObject.SetActive(false);
+        }
+    }
+
+    private void ToggleSubSystemSelectionPanel(PowerManagementApp appInstance, bool toggle)
+    {
+        subSystemSelectionPanel.gameObject.SetActive(toggle);
+        //UpdateSelectedEntityInfo(null);
+        if (toggle == true && selectedGrid != null)
+        {
+            if (systemEntitiesDropdown.gameObject.activeSelf == true)
+            {
+                systemEntitiesDropdown.gameObject.SetActive(false);
+            }
+            //set sub system options
+            List<string> systemLabels = appInstance.SubSystemLabels;
+            for (int i = 0; i < subSystemSelectionOptions.Length; i++)
+            {
+                if (i < systemLabels.Count)
+                {
+                    subSystemSelectionOptions[i].SubSystemOptionImage.gameObject.SetActive(true);
+                    subSystemSelectionOptions[i].SubSystemOptionText.text = systemLabels[i];
+                }
+                else
+                {
+                    subSystemSelectionOptions[i].SubSystemOptionImage.gameObject.SetActive(false);
+                }
+            }
+        }
+    }
+}
+
+[System.Serializable]
+public class SecurityAppUI : TerminalAppUI
+{
+
 }

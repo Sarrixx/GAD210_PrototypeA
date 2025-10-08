@@ -31,13 +31,13 @@ public class PowerGridSwitch : Interactable
                             system.ToggleSubsystem(!system.Active);
                         }
                     }
-                    else
-                    {
-                        if (debug == true)
-                        {
-                            Log($"Power grid with ID '{id}' not found!");
-                        }
-                    }
+                    //else
+                    //{
+                    //    if (debug == true)
+                    //    {
+                    //        Log($"Power grid with ID '{id}' not found!");
+                    //    }
+                    //}
                 }
             }
             return true;

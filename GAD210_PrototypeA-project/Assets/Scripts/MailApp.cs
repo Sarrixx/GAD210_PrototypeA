@@ -7,20 +7,16 @@ public class MailApp : TerminalApp
 {
     [SerializeField] private Mail[] inbox;
 
+    public Mail[] Inbox { get { return inbox; } }
+
     public override bool Display(TerminalHUD hudInstance)
     {
         return hudInstance.DisplayApp(this);
     }
 
-    public override bool StartApp(Terminal terminalInstance)
+    public bool SelectMail(int index, out Mail mail)
     {
-        //startup program
-        return false;
-    }
-
-    public bool SelectMail(int index, out Mail? mail)
-    {
-        mail = null;
+        mail = new Mail();
         if(index >= 0 && index < inbox.Length)
         {
             mail = inbox[index];
@@ -38,7 +34,7 @@ public struct Mail
 
     public string FromAddress { get { return fromAddress; } }
     public string ToAddress { get { return toAddress; } }
-    public string SubjectLine { get { return SubjectLine; } }
+    public string SubjectLine { get { return subjectLine; } }
     public string Message { get { return message; } }
     public string CompiledMessage
     {

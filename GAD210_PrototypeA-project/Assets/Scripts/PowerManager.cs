@@ -1,9 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Xml;
 using UnityEngine;
-using static UnityEngine.EventSystems.EventTrigger;
 
 public class PowerManager : MonoBehaviour
 {
@@ -129,7 +126,52 @@ public class PowerManager : MonoBehaviour
                 return true;
             }
         }
+        Debug.Log($"Power grid with ID '{gridID}' not found!");
         return false;
+    }
+
+    public bool GetGrid(int index, out PowerGrid grid)
+    {
+        grid = null;
+        if (index < powerGrids.Length && powerGrids[index] != null)
+        {
+            grid = powerGrids[index];
+            return true;
+        }
+        Debug.Log($"Power grid at index '{index}' not found!");
+        return false;
+    }
+
+    public bool TryGetGrid(string id, out PowerGrid grid)
+    {
+        string[] labels = id.Split('_');
+        labels[0] = labels[0].Replace("_", string.Empty);
+        return GetGrid(labels[0], out grid);
+    }
+
+    public bool TryGetSubSystem(string id, out PowerSubSystem subSystem) 
+    {
+        subSystem = null;
+        string[] labels = id.Split('_');
+        labels[0] = labels[0].Replace("_", string.Empty);
+        if (labels.Length > 1)
+        {
+            labels[1] = labels[1].Replace("_", string.Empty);
+            if (GetGrid(labels[0], out PowerGrid grid) == true)
+            {
+                return grid.GetSubSystem(labels[1], out subSystem);
+            }
+        }
+        else
+        {
+            Debug.Log($"No subsystem label provided! (Separate subsystem label from grid label using '_' character.)");
+        }
+        return false;
+    }
+
+    public bool TryGetSubSystem(PowerGrid gridInstance, string id, out PowerSubSystem subSystem) 
+    {
+        return gridInstance.GetSubSystem(id, out subSystem);
     }
 }
 
@@ -143,6 +185,8 @@ public class PowerGrid
     [SerializeField] private string id;
     [Tooltip("Definitions for the sub systems connected to the power grid.")]
     [SerializeField] private PowerSubSystem[] subSystems;
+
+    public PowerSubSystem[] SubSystems { get { return subSystems; } }
 
     /// <summary>
     /// The identifying string associated with this PowerGrid.
@@ -227,6 +271,7 @@ public class PowerGrid
                 return true;
             }
         }
+        Debug.Log($"Power sub system with ID '{systemID}' not found!");
         return false;
     }
 }
@@ -246,6 +291,8 @@ public class PowerSubSystem
 
     private float currentPowerUsage = 0;
     private readonly List<IPoweredEntity> connectedEntities = new List<IPoweredEntity>();
+
+    public List<IPoweredEntity> ConnectedEntities { get { return connectedEntities; } }
 
     /// <summary>
     /// Returns true if the PowerSubSystem is currently providing power to connected IPoweredEntitys.

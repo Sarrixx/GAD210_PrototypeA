@@ -10,39 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1a4dd649ecba58e49a5b5c6fcd0fe75e, type: 3}
-  m_Name: New Mail App Instance
+  m_Name: New Mail App Instance 1
   m_EditorClassIdentifier: 
   id: 
   icon: {fileID: 21300000, guid: 07d1f38d8b4086545a07feb4823f3a15, type: 3}
   inbox:
   - fromAddress: test@address.com
     toAddress: player@game.com
-    subjectLine: Test Email
-    message: 'Hi,
-
-
-      This is just a test message.
-
-
-      I''m testing formatting,
-      and checking how the system works.
-
-
-      Kind regards,
-
-
-      Foo Bar'
+    subjectLine: Random Message
+    message: Some other random message.
   - fromAddress: test@address.com
     toAddress: player@game.com
-    subjectLine: Test Email 2
-    message: 'Hi,
-
-
-      Another test message...
-
-
-      Kind regards,
-
-
-      Foo
-      Bar'
+    subjectLine: Random Message 2
+    message: A second random message.
+  - fromAddress: test@address.com
+    toAddress: player@game.com
+    subjectLine: Other message
+    message: Other message.

@@ -8,14 +8,10 @@ public class SecurityApp : TerminalApp
     ///security terminals
     ///> toggle alarms
     ///> override active lasers
+
     public override bool Display(TerminalHUD hudInstance)
     {
         return hudInstance.DisplayApp(this);
-    }
-
-    public override bool StartApp(Terminal terminalInstance)
-    {
-        throw new System.NotImplementedException();
     }
 
     public bool LockDoor(DoorInteraction doorInstance)
